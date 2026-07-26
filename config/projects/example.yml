@@ -1,7 +1,7 @@
 inputs:
-  dem: ../../input/cropped_dem.tif
-  gpkg: ../../input/terrain_features.gpkg
-  qgz: ../../input/project.qgz
+  dem: ./input/cropped_dem.tif
+  gpkg: ./input/terrain_features.gpkg
+  qgz: ./input/project.qgz
 output:
-  directory: ../../output
+  directory: ./output
   stem: my_ski_area

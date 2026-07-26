@@ -1,10 +1,10 @@
 inputs:
-  dem: ../../input/cropped_dem.tif
-  gpkg: ../../input/craigieburn_features.gpkg
-  qgz: ../../input/craigieburn.qgz
+  dem: ./input/cropped_dem.tif
+  gpkg: ./input/craigieburn_features.gpkg
+  qgz: ./input/craigieburn.qgz
 
 output:
-  directory: ../../output
+  directory: ./output
   stem: craigieburn
 
 # Project-specific overrides belong here.
