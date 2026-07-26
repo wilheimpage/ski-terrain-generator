@@ -9,6 +9,7 @@ import trimesh
 
 from .errors import BuildError
 from .terrain import TerrainGrid
+from .config import surface_layer_depth_mm
 
 CORE_NS = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 PROD_NS = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
@@ -121,18 +122,21 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     features = cfg.get("features", {})
     cap = float(model.get("material_cap_depth_mm", 0.8))
     base = float(model.get("base_thickness_mm", 3.0))
+    surface_layer_depth = surface_layer_depth_mm(cfg)
     road_height = float(features.get("roads", {}).get("height_mm", 0.4))
     run_height = float(features.get("runs", {}).get("height_mm", 0.2))
     lift_height = float(features.get("lifts", {}).get("height_mm", run_height))
     core_top = np.maximum(grid.z_mm - cap, base * 0.25)
     zero = np.zeros_like(grid.z_mm)
+    shell_base = np.maximum(core_top - surface_layer_depth, zero)
+    shell_top = np.maximum(core_top, grid.z_mm - surface_layer_depth)
 
     core = named_solid("Structural core", valid_c, grid, zero, core_top)
     exposed = named_solid("Exposed rock", cat_rock, grid, core_top, grid.z_mm)
-    snow = named_solid("Snow", cat_snow, grid, core_top, grid.z_mm)
-    forest = named_solid("Forest", cat_forest, grid, core_top, grid.z_mm)
-    roads = named_solid("Roads", cat_roads, grid, core_top, grid.z_mm + road_height)
-    lifts = named_solid("Lifts", lifts_c, grid, core_top, grid.z_mm + lift_height)
+    snow = named_solid("Snow", cat_snow, grid, shell_base, shell_top)
+    forest = named_solid("Forest", cat_forest, grid, shell_base, shell_top)
+    roads = named_solid("Roads", cat_roads, grid, shell_base, shell_top + road_height)
+    lifts = named_solid("Lifts", lifts_c, grid, shell_base, shell_top + lift_height)
 
     layer_display_names = {
         "forest": "forest",

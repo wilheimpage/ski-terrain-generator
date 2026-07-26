@@ -4,7 +4,8 @@ model:
   vertical_exaggeration: 1.0
   # Smaller values produce finer-resolution terrain and feature masks, at the cost of slower builds.
   grid_spacing_mm: 0.25
-  material_cap_depth_mm: 0.80
+  # Thickness of the top shell layer that represents exposed rock/snow above the core terrain.
+  material_cap_depth_mm: 0.60
 
 layers:
   forest: forest

@@ -124,3 +124,8 @@ def feature_width_mm(cfg: dict, feature: str) -> float:
     line_width = float(cfg.get("printer", {}).get("line_width_mm", 0.42))
     extrusions = float(feature_cfg.get("extrusions", 1))
     return line_width * extrusions
+
+
+def surface_layer_depth_mm(cfg: dict) -> float:
+    model_cfg = cfg.get("model", {})
+    return float(model_cfg.get("material_cap_depth_mm", 0.8))

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ski_terrain.config import deep_merge, feature_width_mm, load_layered_config, set_dotted
+from ski_terrain.config import deep_merge, feature_width_mm, load_layered_config, set_dotted, surface_layer_depth_mm
 
 
 def test_deep_merge_and_width():
@@ -12,6 +12,11 @@ def test_dotted_override():
     cfg = {}
     set_dotted(cfg, "rock.score_threshold", 0.7)
     assert cfg["rock"]["score_threshold"] == 0.7
+
+
+def test_surface_layer_depth_defaults_and_overrides():
+    assert surface_layer_depth_mm({}) == 0.8
+    assert surface_layer_depth_mm({"model": {"material_cap_depth_mm": 0.6}}) == 0.6
 
 
 def test_relative_paths_are_resolved_from_current_working_directory(tmp_path, monkeypatch):

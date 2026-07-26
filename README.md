@@ -36,21 +36,31 @@ python -m pip install -e .
 
 ## Basic workflow
 
+The recommended entry point is the wrapper script, which creates/uses the local virtual environment, installs dependencies if needed, and runs the generator for you.
+
 1. Copy the cropped DEM, GeoPackage, and optional QGZ into `input/`.
 2. Copy `config/projects/example.yml` to a ski-area-specific name.
 3. Set its input filenames and output stem.
-4. Generate a quick classification preview:
+4. Generate a quick classification preview from PowerShell:
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml --preview-only
+.\scripts\run_windows.ps1 -ProjectConfig config/projects/craigieburn.yml -PreviewOnly
+```
+
+On Linux/macOS, use:
+
+```bash
+./scripts/run_linux_macos.sh config/projects/craigieburn.yml --preview-only
 ```
 
 5. Adjust YAML values until the preview looks right.
 6. Generate the final 3MF and STL parts:
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml
+.\scripts\run_windows.ps1 -ProjectConfig config/projects/craigieburn.yml
 ```
+
+If you omit the project path, the scripts prompt for it and fall back to `config/projects/example.yml`.
 
 ## Configuration precedence
 
@@ -65,7 +75,7 @@ Configuration is merged in this order, with later values winning:
 The default command therefore means:
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml `
+ski-terrain config/projects/example.yml `
   --defaults config/default.yml `
   --printer config/printers/bambu-a1-04.yml `
   --profile config/profiles/display.yml
