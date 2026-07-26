@@ -47,6 +47,11 @@ def component_solid(cell_mask, grid: TerrainGrid, bottom_z, top_z):
             faces.extend(((ia,ib,ia+n),(ib,ib+n,ia+n)))
     mesh = trimesh.Trimesh(vertices=vertices, faces=np.asarray(faces, dtype=np.int64), process=False)
     mesh.remove_unreferenced_vertices()
+    if len(mesh.faces) > 0:
+        try:
+            mesh = mesh.process()
+        except Exception:
+            mesh = trimesh.Trimesh(vertices=mesh.vertices, faces=mesh.faces, process=False)
     return mesh
 
 
@@ -55,6 +60,15 @@ def named_solid(name, mask, grid, bottom, top):
     if mesh is not None:
         mesh.metadata["name"] = name
     return mesh
+
+
+def repair_mesh(mesh: trimesh.Trimesh | None) -> trimesh.Trimesh | None:
+    if mesh is None or len(mesh.faces) == 0:
+        return mesh
+    try:
+        return mesh.process()
+    except Exception:
+        return mesh
 
 
 def assembled_3mf(scene: trimesh.Scene, output_path: Path, name: str):
@@ -131,12 +145,12 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     shell_base = np.maximum(core_top - surface_layer_depth, zero)
     shell_top = np.maximum(core_top, grid.z_mm - surface_layer_depth)
 
-    core = named_solid("Structural core", valid_c, grid, zero, core_top)
-    exposed = named_solid("Exposed rock", cat_rock, grid, core_top, grid.z_mm)
-    snow = named_solid("Snow", cat_snow, grid, shell_base, shell_top)
-    forest = named_solid("Forest", cat_forest, grid, shell_base, shell_top)
-    roads = named_solid("Roads", cat_roads, grid, shell_base, shell_top + road_height)
-    lifts = named_solid("Lifts", lifts_c, grid, shell_base, shell_top + lift_height)
+    core = repair_mesh(named_solid("Structural core", valid_c, grid, zero, core_top))
+    exposed = repair_mesh(named_solid("Exposed rock", cat_rock, grid, core_top, grid.z_mm))
+    snow = repair_mesh(named_solid("Snow", cat_snow, grid, shell_base, shell_top))
+    forest = repair_mesh(named_solid("Forest", cat_forest, grid, shell_base, shell_top))
+    roads = repair_mesh(named_solid("Roads", cat_roads, grid, shell_base, shell_top + road_height))
+    lifts = repair_mesh(named_solid("Lifts", lifts_c, grid, shell_base, shell_top + lift_height))
 
     layer_display_names = {
         "forest": "forest",
@@ -161,7 +175,7 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     ]
     for label, cells in allocated_runs:
         name = f"{run_layer_name} - {label}" if label else run_layer_name
-        parts.append((named_solid(name, cells, grid, core_top, grid.z_mm + run_height), name))
+        parts.append((repair_mesh(named_solid(name, cells, grid, core_top, grid.z_mm + run_height)), name))
     return parts
 
 
