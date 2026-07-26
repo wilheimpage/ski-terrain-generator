@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from collections import OrderedDict
 import numpy as np
@@ -44,13 +43,6 @@ def buffered_union(frame: gpd.GeoDataFrame, width_world: float):
     )
 
 
-def regex_mask(values, patterns: list[str]) -> np.ndarray:
-    expressions = [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
-    return np.asarray(
-        [any(rx.search(str(value or "").strip()) for rx in expressions) for value in values]
-    )
-
-
 def normalise_difficulty(value, blank_label: str) -> str:
     """Return a stable display label while preserving the source value's spelling."""
     if value is None:
@@ -64,6 +56,13 @@ def normalise_difficulty(value, blank_label: str) -> str:
     return text if text else blank_label
 
 
+def ensure_columns(frame: gpd.GeoDataFrame, columns: list[str]) -> gpd.GeoDataFrame:
+    for column in columns:
+        if column not in frame.columns:
+            frame[column] = pd.Series(dtype="object")
+    return frame
+
+
 def build_feature_masks(gpkg: Path, grid: TerrainGrid, cfg: dict):
     layers = cfg.get("layers", {})
     features = cfg.get("features", {})
@@ -71,22 +70,14 @@ def build_feature_masks(gpkg: Path, grid: TerrainGrid, cfg: dict):
     road_areas = read_layer(gpkg, str(layers.get("road_areas", "road_areas")), grid.crs)
     roads = read_layer(gpkg, str(layers.get("roads", "roads")), grid.crs)
     runs = read_layer(gpkg, str(layers.get("ski_runs", "ski_runs")), grid.crs)
+    lifts = read_layer(gpkg, str(layers.get("lifts", "lifts")), grid.crs)
 
     name_field = str(features.get("road_name_field", "name"))
     difficulty_field = str(features.get("run_difficulty_field", "difficulty"))
     blank_label = str(features.get("blank_difficulty_label", "Unclassified"))
 
-    if name_field not in roads.columns:
-        raise BuildError(f"Road layer lacks field '{name_field}'")
-    if difficulty_field not in runs.columns:
-        raise BuildError(f"Ski-run layer lacks field '{difficulty_field}'")
-
-    patterns = list(
-        features.get("lift_name_patterns", ["^access( tow)?$", "^middle$", "^jarman$"])
-    )
-    is_lift = regex_mask(roads[name_field].fillna(""), patterns)
-    lifts = roads[is_lift].copy()
-    roads_only = roads[~is_lift].copy()
+    roads = ensure_columns(roads, [name_field])
+    runs = ensure_columns(runs, [difficulty_field])
 
     shape = grid.valid.shape
     world_per_mm = 1.0 / grid.scale_mm_per_world_unit
@@ -95,7 +86,7 @@ def build_feature_masks(gpkg: Path, grid: TerrainGrid, cfg: dict):
     lift_width = feature_width_mm(cfg, "lifts") * world_per_mm
 
     forest_m = geometry_mask(clean_geometries(forest), shape, grid.raster_transform)
-    roads_m = geometry_mask(buffered_union(roads_only, road_width), shape, grid.raster_transform)
+    roads_m = geometry_mask(buffered_union(roads, road_width), shape, grid.raster_transform)
     roads_m |= geometry_mask(clean_geometries(road_areas), shape, grid.raster_transform)
     lifts_m = geometry_mask(buffered_union(lifts, lift_width), shape, grid.raster_transform)
 
@@ -118,7 +109,7 @@ def build_feature_masks(gpkg: Path, grid: TerrainGrid, cfg: dict):
     counts = {
         "forest": len(forest),
         "road_areas": len(road_areas),
-        "roads": len(roads_only),
+        "roads": len(roads),
         "lifts": len(lifts),
         "ski_runs": len(runs),
         "ski_runs_by_difficulty": dict(run_counts),

@@ -55,8 +55,19 @@ def inspect_qgz(path: Path | None) -> dict:
 
 def read_layer(gpkg: Path, name: str, target_crs) -> gpd.GeoDataFrame:
     try:
+        available_layers = gpd.list_layers(gpkg)
+        layer_names = {layer.name for layer in available_layers}
+    except Exception:
+        layer_names = None
+
+    if layer_names is not None and name not in layer_names:
+        return gpd.GeoDataFrame(geometry=[], crs=target_crs)
+
+    try:
         frame = gpd.read_file(gpkg, layer=name)
     except Exception as exc:
+        if "does not exist" in str(exc).lower() or "not found" in str(exc).lower() or "could not be opened" in str(exc).lower():
+            return gpd.GeoDataFrame(geometry=[], crs=target_crs)
         raise BuildError(f"Could not read layer '{name}': {exc}") from exc
     if frame.crs is None:
         raise BuildError(f"Layer '{name}' has no CRS")
