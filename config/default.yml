@@ -18,7 +18,9 @@ features:
     - '^access( tow)?$'
     - '^middle$'
     - '^jarman$'
-  blue_difficulty_values: [blue]
+  # Every distinct value in this field becomes its own output object.
+  # Null, blank or whitespace-only values use this label.
+  blank_difficulty_label: Unclassified
   roads:
     extrusions: 2
     height_mm: 0.40

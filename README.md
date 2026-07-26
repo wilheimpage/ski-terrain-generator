@@ -188,9 +188,22 @@ This checks paths, CRS, layer/field names, resolved widths, dimensions, feature 
 | `forest` | polygon | green forest areas |
 | `road_areas` | polygon | car parks and broad road surfaces |
 | `roads` | line | roads and lift/tow centre lines |
-| `ski_runs` | line | blue/black run centre lines |
+| `ski_runs` | line | run centre lines; every distinct difficulty value becomes a separate object |
 
 Default fields are `roads.name` and `ski_runs.difficulty`. Override layer and field names in YAML.
+
+### Dynamic run objects
+
+The generator does not contain a fixed list of run difficulties. It reads every distinct value from the configured ski-run difficulty field and creates a separate 3MF/STL object for each one. For example, values of `Green`, `Blue`, `Red`, `Black`, `Ski Route`, and `Terrain Park` produce six independently assignable objects. New values require no Python or YAML changes.
+
+Matching is based on the complete field value after trimming surrounding whitespace. Capitalisation is preserved in the object name. Null, empty, or whitespace-only values are grouped into `Run - Unclassified`; change that label with:
+
+```yaml
+features:
+  run_difficulty_field: difficulty
+  blank_difficulty_label: Unclassified
+```
+
 
 ## Outputs
 
@@ -199,4 +212,4 @@ Default fields are `roads.name` and `ski_runs.difficulty`. Override layer and fi
 - `<stem>.3mf`
 - `<stem>_parts/*.stl`
 
-The 3MF contains separate assignable parts for grey core/rock, white snow, green forest, grey roads, black lifts/runs, and blue runs.
+The 3MF contains separate assignable parts for the structural core/rock, snow, forest, roads, lifts, and one additional object for every distinct ski-run difficulty value. Filament colours are assigned in the slicer.

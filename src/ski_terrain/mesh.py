@@ -86,14 +86,28 @@ def assembled_3mf(scene: trimesh.Scene, output_path: Path, name: str):
 def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     valid_c = grid.valid[:-1,:-1] & grid.valid[:-1,1:] & grid.valid[1:,:-1] & grid.valid[1:,1:]
     rock_c = to_cells(rock) & valid_c
-    forest_c, roads_c = to_cells(masks["forest"]) & valid_c, to_cells(masks["roads"]) & valid_c
-    blue_c, black_c = to_cells(masks["blue"]) & valid_c, to_cells(masks["black"]) & valid_c
-    cat_black = black_c
-    cat_blue = blue_c & ~cat_black
-    cat_roads = roads_c & ~cat_black & ~cat_blue
-    cat_forest = forest_c & ~cat_black & ~cat_blue & ~cat_roads
-    cat_rock = rock_c & ~cat_black & ~cat_blue & ~cat_roads & ~cat_forest
-    cat_snow = valid_c & ~cat_black & ~cat_blue & ~cat_roads & ~cat_forest & ~cat_rock
+    forest_c = to_cells(masks["forest"]) & valid_c
+    roads_c = to_cells(masks["roads"]) & valid_c
+    lifts_c = to_cells(masks["lifts"]) & valid_c
+    run_cells = [(label, to_cells(mask) & valid_c) for label, mask in masks["runs"].items()]
+
+    # Keep all material bodies non-overlapping. Lifts have highest priority, then
+    # each run class in stable alphabetical order, followed by roads and forest.
+    claimed = lifts_c.copy()
+    allocated_runs = []
+    for label, cells in run_cells:
+        allocated = cells & ~claimed
+        allocated_runs.append((label, allocated))
+        claimed |= allocated
+
+    cat_roads = roads_c & ~claimed
+    claimed |= cat_roads
+    cat_forest = forest_c & ~claimed
+    claimed |= cat_forest
+    cat_rock = rock_c & ~claimed
+    claimed |= cat_rock
+    cat_snow = valid_c & ~claimed
+
     model = cfg.get("model", {})
     features = cfg.get("features", {})
     cap = float(model.get("material_cap_depth_mm", 0.8))
@@ -101,23 +115,33 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     road_height = float(features.get("roads", {}).get("height_mm", 0.4))
     run_height = float(features.get("runs", {}).get("height_mm", 0.2))
     lift_height = float(features.get("lifts", {}).get("height_mm", run_height))
-    line_height = max(run_height, lift_height)
     core_top = np.maximum(grid.z_mm - cap, base * 0.25)
     zero = np.zeros_like(grid.z_mm)
-    core = named_solid("Grey structural core", valid_c, grid, zero, core_top)
-    exposed = named_solid("Grey exposed rock", cat_rock, grid, core_top, grid.z_mm)
-    snow = named_solid("White snow", cat_snow, grid, core_top, grid.z_mm)
-    forest = named_solid("Green forest", cat_forest, grid, core_top, grid.z_mm)
-    roads = named_solid("Grey roads", cat_roads, grid, core_top, grid.z_mm + road_height)
-    black = named_solid("Black lifts and black runs", cat_black, grid, core_top, grid.z_mm + line_height)
-    blue = named_solid("Blue runs", cat_blue, grid, core_top, grid.z_mm + run_height)
-    grey_parts = [part for part in (core, exposed) if part is not None]
-    if not grey_parts:
+
+    core = named_solid("Structural core", valid_c, grid, zero, core_top)
+    exposed = named_solid("Exposed rock", cat_rock, grid, core_top, grid.z_mm)
+    snow = named_solid("Snow", cat_snow, grid, core_top, grid.z_mm)
+    forest = named_solid("Forest", cat_forest, grid, core_top, grid.z_mm)
+    roads = named_solid("Roads", cat_roads, grid, core_top, grid.z_mm + road_height)
+    lifts = named_solid("Lifts", lifts_c, grid, core_top, grid.z_mm + lift_height)
+
+    structural_parts = [part for part in (core, exposed) if part is not None]
+    if not structural_parts:
         raise BuildError("No structural terrain mesh generated")
-    grey = trimesh.util.concatenate(grey_parts)
-    grey.metadata["name"] = "Grey core and exposed rock"
-    return [(grey,"Grey core and exposed rock"),(snow,"White snow"),(forest,"Green forest"),
-            (roads,"Grey roads"),(black,"Black lifts and black runs"),(blue,"Blue runs")]
+    structural = trimesh.util.concatenate(structural_parts)
+    structural.metadata["name"] = "Structural core and exposed rock"
+
+    parts = [
+        (structural, "Structural core and exposed rock"),
+        (snow, "Snow"),
+        (forest, "Forest"),
+        (roads, "Roads"),
+        (lifts, "Lifts"),
+    ]
+    for label, cells in allocated_runs:
+        name = f"Run - {label}"
+        parts.append((named_solid(name, cells, grid, core_top, grid.z_mm + run_height), name))
+    return parts
 
 
 def export_parts(parts, output_dir: Path):

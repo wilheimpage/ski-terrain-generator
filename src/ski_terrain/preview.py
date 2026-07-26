@@ -11,9 +11,16 @@ def save_preview(path: Path, title: str, valid, rock, masks, slope, dzdx, dzdy, 
     rgb[rock] = (0.42, 0.42, 0.42)
     rgb[masks["forest"]] = (0.16, 0.48, 0.18)
     rgb[masks["roads"]] = (0.52, 0.52, 0.52)
-    rgb[masks["blue"]] = (0.05, 0.28, 0.92)
-    rgb[masks["black"]] = (0.03, 0.03, 0.03)
+
+    # Preview colours are visual aids only; exported objects carry names, not a
+    # required filament assignment. The colormap scales to any number of classes.
+    run_items = list(masks["runs"].items())
+    cmap = plt.get_cmap("tab20", max(1, len(run_items)))
+    for index, (_, mask) in enumerate(run_items):
+        rgb[mask] = np.asarray(cmap(index)[:3], dtype=np.float32)
+    rgb[masks["lifts"]] = (0.03, 0.03, 0.03)
     rgb[~valid] = (1.0, 1.0, 1.0)
+
     azimuth, altitude = np.deg2rad(315), np.deg2rad(40)
     slope_rad = np.deg2rad(slope)
     aspect = np.arctan2(-dzdx, dzdy)
