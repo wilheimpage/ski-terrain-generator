@@ -69,12 +69,18 @@ def assembled_3mf(scene: trimesh.Scene, output_path: Path, name: str):
         if resources is None or build is None:
             raise BuildError("Unexpected 3MF structure")
         children = resources.findall(f"{{{CORE_NS}}}object")
+        if not children:
+            raise BuildError("No 3MF objects found to assemble")
         parent_id = str(max(int(obj.attrib["id"]) for obj in children) + 1)
         parent = ET.SubElement(resources, f"{{{CORE_NS}}}object", {"id":parent_id,"name":name,"type":"model"})
         components = ET.SubElement(parent, f"{{{CORE_NS}}}components")
         for obj in children:
-            ET.SubElement(components, f"{{{CORE_NS}}}component", {"objectid":obj.attrib["id"]})
-        for item in list(build): build.remove(item)
+            obj_name = obj.attrib.get("name") or obj.attrib.get("id") or "unnamed"
+            ET.SubElement(components, f"{{{CORE_NS}}}component", {"objectid":obj.attrib["id"], "transform": "1 0 0 0 1 0 0 0 1 0 0 0"})
+            if obj_name:
+                obj.set("name", obj_name)
+        for item in list(build):
+            build.remove(item)
         ET.SubElement(build, f"{{{CORE_NS}}}item", {"objectid":parent_id})
         xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
         with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as target:
@@ -90,6 +96,9 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     roads_c = to_cells(masks["roads"]) & valid_c
     lifts_c = to_cells(masks["lifts"]) & valid_c
     run_cells = [(label, to_cells(mask) & valid_c) for label, mask in masks["runs"].items()]
+
+    layer_names = cfg.get("layers", {})
+    run_layer_name = str(layer_names.get("ski_runs", "ski_runs"))
 
     # Keep all material bodies non-overlapping. Lifts have highest priority, then
     # each run class in stable alphabetical order, followed by roads and forest.
@@ -125,6 +134,14 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     roads = named_solid("Roads", cat_roads, grid, core_top, grid.z_mm + road_height)
     lifts = named_solid("Lifts", lifts_c, grid, core_top, grid.z_mm + lift_height)
 
+    layer_display_names = {
+        "forest": "forest",
+        "road_areas": "road_areas",
+        "roads": "roads",
+        "ski_runs": run_layer_name,
+        "lifts": "lifts",
+    }
+
     structural_parts = [part for part in (core, exposed) if part is not None]
     if not structural_parts:
         raise BuildError("No structural terrain mesh generated")
@@ -134,12 +151,12 @@ def build_meshes(grid: TerrainGrid, rock, masks, cfg: dict):
     parts = [
         (structural, "Structural core and exposed rock"),
         (snow, "Snow"),
-        (forest, "Forest"),
-        (roads, "Roads"),
-        (lifts, "Lifts"),
+        (forest, f"{layer_display_names['forest']}"),
+        (roads, f"{layer_display_names['roads']}"),
+        (lifts, f"{layer_display_names['lifts']}"),
     ]
     for label, cells in allocated_runs:
-        name = f"Run - {label}"
+        name = f"{run_layer_name} - {label}" if label else run_layer_name
         parts.append((named_solid(name, cells, grid, core_top, grid.z_mm + run_height), name))
     return parts
 

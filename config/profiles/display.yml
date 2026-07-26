@@ -1,6 +1,6 @@
 # Clear, map-like features designed around whole extrusion widths.
 model:
-  grid_spacing_mm: 0.42
+  grid_spacing_mm: 0.25
 features:
   roads: {extrusions: 2}
   runs: {extrusions: 1}

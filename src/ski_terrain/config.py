@@ -28,6 +28,21 @@ def deep_merge(base: dict, overlay: dict) -> dict:
     return result
 
 
+def merge_layer_settings(base: dict, overlay: dict) -> dict:
+    result = copy.deepcopy(base)
+    for key, value in overlay.items():
+        if key == "layers" and isinstance(value, dict):
+            if not isinstance(result.get("layers"), dict):
+                result["layers"] = {}
+            for layer_name, layer_value in value.items():
+                result["layers"][layer_name] = copy.deepcopy(layer_value)
+        elif isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merge_layer_settings(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
 def parse_scalar(value: str) -> Any:
     try:
         return yaml.safe_load(value)
@@ -53,7 +68,8 @@ def set_dotted(config: dict, dotted_key: str, value: Any) -> None:
 
 def resolve_relative_paths(config: dict, project_file: Path) -> dict:
     config = copy.deepcopy(config)
-    root = project_file.parent.resolve()
+    project_root = project_file.parent.resolve()
+    working_root = Path.cwd().resolve()
     for section, keys in {
         "inputs": ("dem", "gpkg", "qgz"),
         "output": ("directory",),
@@ -64,7 +80,18 @@ def resolve_relative_paths(config: dict, project_file: Path) -> dict:
             if not raw:
                 continue
             path = Path(str(raw)).expanduser()
-            values[key] = str(path if path.is_absolute() else (root / path).resolve())
+            if path.is_absolute():
+                resolved = path
+            else:
+                cwd_candidate = (working_root / path).resolve()
+                project_candidate = (project_root / path).resolve()
+                if cwd_candidate.exists():
+                    resolved = cwd_candidate
+                elif project_candidate.exists():
+                    resolved = project_candidate
+                else:
+                    resolved = cwd_candidate
+            values[key] = str(resolved)
     return config
 
 
@@ -78,7 +105,10 @@ def load_layered_config(
     cfg: dict = {}
     for path in (defaults_path, printer_path, profile_path, project_path):
         if path is not None:
-            cfg = deep_merge(cfg, load_yaml(path.resolve()))
+            if path == project_path:
+                cfg = merge_layer_settings(cfg, load_yaml(path.resolve()))
+            else:
+                cfg = deep_merge(cfg, load_yaml(path.resolve()))
     for expression in overrides or []:
         if "=" not in expression:
             raise BuildError(f"Override must use key=value syntax: {expression}")

@@ -1,7 +1,0 @@
-inputs:
-  dem: ..\input\BX20.tif
-  gpkg: ..\input\mount-hutt.gpkg
-  qgz: ..\input\mount-hutt.qgz
-output:
-  directory: ./output
-  stem: mount_hutt

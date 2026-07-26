@@ -2,14 +2,15 @@ model:
   maximum_dimension_mm: 250.0
   base_thickness_mm: 3.0
   vertical_exaggeration: 1.0
-  grid_spacing_mm: 0.42
+  # Smaller values produce finer-resolution terrain and feature masks, at the cost of slower builds.
+  grid_spacing_mm: 0.25
   material_cap_depth_mm: 0.80
 
 layers:
   forest: forest
-  road_areas: road_areas
+  road_areas: road-areas
   roads: roads
-  ski_runs: ski_runs
+  ski_runs: ski-runs
   lifts: lifts
 
 features:

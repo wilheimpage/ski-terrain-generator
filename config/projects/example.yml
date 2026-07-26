@@ -1,7 +1,13 @@
 inputs:
-  dem: ./input/cropped_dem.tif
-  gpkg: ./input/terrain_features.gpkg
-  qgz: ./input/project.qgz
+  dem: ./input/BX20.tif
+  gpkg: ./input/mount-hutt.gpkg
+  qgz: ./input/mount-hutt.qgz
+layers:
+  forest: forest
+  road_areas: road-areas
+  roads: roads
+  ski_runs: ski-runs
+  lifts: lifts
 output:
   directory: ./output
-  stem: my_ski_area
+  stem: mount_hutt
