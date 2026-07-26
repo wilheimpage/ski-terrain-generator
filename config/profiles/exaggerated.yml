@@ -1,0 +1,6 @@
+model:
+  vertical_exaggeration: 1.5
+features:
+  roads: {extrusions: 2.5}
+  runs: {extrusions: 1.5}
+  lifts: {extrusions: 1.5}

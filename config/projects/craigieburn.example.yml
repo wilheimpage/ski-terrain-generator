@@ -1,0 +1,14 @@
+inputs:
+  dem: ../../input/cropped_dem.tif
+  gpkg: ../../input/craigieburn_features.gpkg
+  qgz: ../../input/craigieburn.qgz
+
+output:
+  directory: ../../output
+  stem: craigieburn
+
+# Project-specific overrides belong here.
+# The access line is classified as a black lift by the default regex.
+rock:
+  score_threshold: 0.65
+  minimum_patch_area_mm2: 1.5

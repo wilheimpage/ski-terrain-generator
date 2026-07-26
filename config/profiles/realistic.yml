@@ -1,0 +1,9 @@
+# Finer geometry and slightly less visual exaggeration; slower and more memory intensive.
+model:
+  grid_spacing_mm: 0.30
+features:
+  roads: {extrusions: 1.5}
+  runs: {extrusions: 0.75}
+  lifts: {extrusions: 0.75}
+rock:
+  score_threshold: 0.68

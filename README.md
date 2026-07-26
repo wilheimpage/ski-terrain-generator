@@ -1,0 +1,202 @@
+# Ski Terrain Generator
+
+A reusable Python project that converts a cropped LiDAR DEM (`.tif`) plus manually digitised QGIS layers in a GeoPackage (`.gpkg`) into a printer-aware, multi-part `.3mf` terrain model.
+
+The optional QGIS project (`.qgz`) is inspected for reporting only. Geometry comes from the saved TIFF and GeoPackage, so unsaved QGIS edits are not included.
+
+## Repository layout
+
+```text
+config/default.yml              shared geometry and rock settings
+config/printers/*.yml           nozzle and extrusion-width settings
+config/profiles/*.yml           display, realistic, exaggerated styles
+config/projects/*.yml           one file per ski area
+src/ski_terrain/                generator source code
+input/                          local GIS inputs; ignored by Git
+output/                         generated previews and models; ignored by Git
+```
+
+## Installation
+
+Use 64-bit Python 3.11 or 3.12.
+
+```powershell
+py -3 -m venv .venv
+.venv\Scripts\activate
+python -m pip install -e .
+```
+
+Linux/macOS:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
+```
+
+## Basic workflow
+
+1. Copy the cropped DEM, GeoPackage, and optional QGZ into `input/`.
+2. Copy `config/projects/example.yml` to a ski-area-specific name.
+3. Set its input filenames and output stem.
+4. Generate a quick classification preview:
+
+```powershell
+ski-terrain config/projects/craigieburn.yml --preview-only
+```
+
+5. Adjust YAML values until the preview looks right.
+6. Generate the final 3MF and STL parts:
+
+```powershell
+ski-terrain config/projects/craigieburn.yml
+```
+
+## Configuration precedence
+
+Configuration is merged in this order, with later values winning:
+
+1. `config/default.yml`
+2. printer file
+3. profile file
+4. project file
+5. command-line overrides
+
+The default command therefore means:
+
+```powershell
+ski-terrain config/projects/craigieburn.yml `
+  --defaults config/default.yml `
+  --printer config/printers/bambu-a1-04.yml `
+  --profile config/profiles/display.yml
+```
+
+## Printer-aware feature widths
+
+Widths are normally specified as extrusion counts rather than hard-coded millimetres:
+
+```yaml
+printer:
+  line_width_mm: 0.42
+features:
+  roads: {extrusions: 2}
+  runs: {extrusions: 1}
+  lifts: {extrusions: 1}
+```
+
+This produces 0.84 mm roads and 0.42 mm runs/lifts. Switching to the supplied 0.6 mm printer profile automatically produces 1.24 mm roads and 0.62 mm runs/lifts.
+
+A project can force an exact width when required:
+
+```yaml
+features:
+  roads:
+    width_mm: 0.90
+```
+
+`width_mm` takes precedence over `extrusions`.
+
+## Main parameters
+
+Vertical scale and model dimensions:
+
+```yaml
+model:
+  maximum_dimension_mm: 250
+  base_thickness_mm: 3
+  vertical_exaggeration: 1.0
+  grid_spacing_mm: 0.42
+  material_cap_depth_mm: 0.8
+```
+
+Rock classification:
+
+```yaml
+rock:
+  score_threshold: 0.65
+  slope_center_degrees: 42.75
+  slope_span_degrees: 13.25
+  roughness_weight: 0.575
+  minimum_patch_area_mm2: 1.5
+```
+
+- Lower `score_threshold` gives more rock.
+- Higher `score_threshold` gives less rock.
+- Higher `minimum_patch_area_mm2` removes more isolated speckles.
+- `grid_spacing_mm` controls output detail and memory use; halving it creates roughly four times as many cells.
+
+Feature heights:
+
+```yaml
+features:
+  roads: {height_mm: 0.40}
+  runs: {height_mm: 0.20}
+  lifts: {height_mm: 0.20}
+```
+
+Lift classification uses case-insensitive regular expressions against `roads.name`:
+
+```yaml
+features:
+  lift_name_patterns:
+    - '^access( tow)?$'
+    - '^middle$'
+    - '^jarman$'
+```
+
+## Command-line overrides
+
+Use YAML for repeatable settings. Command-line overrides are useful for experiments and do not edit any file.
+
+```powershell
+ski-terrain config/projects/craigieburn.yml --preview-only --rock-threshold 0.62
+ski-terrain config/projects/craigieburn.yml --vertical-scale 1.3
+ski-terrain config/projects/craigieburn.yml --line-width 0.45
+```
+
+Any setting can be overridden using dotted `key=value` syntax:
+
+```powershell
+ski-terrain config/projects/craigieburn.yml --preview-only `
+  --set rock.minimum_patch_area_mm2=1.0 `
+  --set features.roads.extrusions=2.5 `
+  --set output.diagnostic_previews=true
+```
+
+## Profiles
+
+Choose another supplied profile:
+
+```powershell
+ski-terrain config/projects/craigieburn.yml --profile config/profiles/realistic.yml --preview-only
+```
+
+Profiles are ordinary YAML overlays. Add your own without changing Python code.
+
+## Validation
+
+```powershell
+ski-terrain config/projects/craigieburn.yml --validate-only
+```
+
+This checks paths, CRS, layer/field names, resolved widths, dimensions, feature counts, and rock coverage without building meshes.
+
+## Expected GeoPackage layers
+
+| Layer | Geometry | Purpose |
+|---|---|---|
+| `forest` | polygon | green forest areas |
+| `road_areas` | polygon | car parks and broad road surfaces |
+| `roads` | line | roads and lift/tow centre lines |
+| `ski_runs` | line | blue/black run centre lines |
+
+Default fields are `roads.name` and `ski_runs.difficulty`. Override layer and field names in YAML.
+
+## Outputs
+
+- `<stem>_preview.png`
+- `<stem>_report.json`
+- `<stem>.3mf`
+- `<stem>_parts/*.stl`
+
+The 3MF contains separate assignable parts for grey core/rock, white snow, green forest, grey roads, black lifts/runs, and blue runs.

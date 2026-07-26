@@ -1,0 +1,45 @@
+model:
+  maximum_dimension_mm: 250.0
+  base_thickness_mm: 3.0
+  vertical_exaggeration: 1.0
+  grid_spacing_mm: 0.42
+  material_cap_depth_mm: 0.80
+
+layers:
+  forest: forest
+  road_areas: road_areas
+  roads: roads
+  ski_runs: ski_runs
+
+features:
+  road_name_field: name
+  run_difficulty_field: difficulty
+  lift_name_patterns:
+    - '^access( tow)?$'
+    - '^middle$'
+    - '^jarman$'
+  blue_difficulty_values: [blue]
+  roads:
+    extrusions: 2
+    height_mm: 0.40
+  runs:
+    extrusions: 1
+    height_mm: 0.20
+  lifts:
+    extrusions: 1
+    height_mm: 0.20
+
+rock:
+  slope_center_degrees: 42.75
+  slope_span_degrees: 13.25
+  roughness_sigma_cells: 1.2
+  roughness_normalization_percentile: 95.0
+  roughness_weight: 0.575
+  score_threshold: 0.65
+  closing_iterations: 1
+  opening_iterations: 1
+  minimum_patch_area_mm2: 1.5
+
+output:
+  write_stl_parts: true
+  diagnostic_previews: false
