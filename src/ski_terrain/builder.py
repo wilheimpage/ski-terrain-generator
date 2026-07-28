@@ -9,6 +9,8 @@ from .config import feature_width_mm
 from .io import build_paths, inspect_qgz
 from .mesh import assembled_3mf, build_meshes, export_parts
 from .preview import save_preview
+import numpy as np
+
 from .terrain import classify_rock, load_terrain
 from .vectors import build_feature_masks
 
@@ -23,8 +25,16 @@ def run_build(cfg: dict, mode: str = "full") -> dict:
     _log_progress(f"Loading terrain from {paths.dem}")
     grid = load_terrain(paths.dem, model_cfg)
     grid_spacing = float(model_cfg.get("grid_spacing_mm", 0.42))
-    _log_progress("Classifying rock and slope")
-    rock, slope, dzdx, dzdy, score = classify_rock(grid, cfg.get("rock", {}), grid_spacing)
+    include_snow = bool(model_cfg.get("include_snow", True))
+    if include_snow:
+        _log_progress("Classifying rock and slope")
+        rock, slope, dzdx, dzdy, score = classify_rock(grid, cfg.get("rock", {}), grid_spacing)
+    else:
+        rock = np.zeros_like(grid.valid, dtype=bool)
+        slope = np.zeros_like(grid.valid, dtype=np.float32)
+        dzdx = np.zeros_like(grid.valid, dtype=np.float32)
+        dzdy = np.zeros_like(grid.valid, dtype=np.float32)
+        score = np.zeros_like(grid.valid, dtype=np.float32)
     _log_progress("Building feature masks from GeoPackage")
     masks, counts, widths = build_feature_masks(paths.gpkg, grid, cfg)
     _log_progress("Inspecting QGIS project metadata")

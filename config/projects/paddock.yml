@@ -1,0 +1,15 @@
+inputs:
+  dem: ./input/BL34.tif
+  gpkg: ./input/paddock.gpkg
+  qgz: ./input/paddock.qgz
+layers:
+  forest: forest
+  # road_areas: road-areas
+  roads: roads
+ # ski_runs: ski-runs
+ # lifts: lifts
+model:
+  include_snow: false
+output:
+  directory: ./output
+  stem: paddock

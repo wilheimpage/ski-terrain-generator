@@ -8,6 +8,8 @@ layers:
   roads: roads
   ski_runs: ski-runs
   lifts: lifts
+model:
+  include_snow: false
 output:
   directory: ./output
   stem: mount_hutt

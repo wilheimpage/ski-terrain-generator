@@ -38,6 +38,17 @@ python -m pip install -e .
 
 The recommended entry point is the wrapper script, which creates/uses the local virtual environment, installs dependencies if needed, and runs the generator for you.
 
+### Simple GeoTIFF to mesh conversion
+
+For a bare-bones conversion with no colour or configuration, use the simple converter:
+
+```powershell
+py -3 -m ski_terrain.simple_convert input/BX20.tif --output output/simple_mesh.obj --max-dimension 180
+```
+
+Use `--format stl` to write an STL instead of OBJ.
+
+
 1. Copy the cropped DEM, GeoPackage, and optional QGZ into `input/`.
 2. Copy `config/projects/example.yml` to a ski-area-specific name.
 3. Set its input filenames and output stem.
