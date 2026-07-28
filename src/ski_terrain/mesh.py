@@ -66,41 +66,9 @@ def repair_mesh(mesh: trimesh.Trimesh | None) -> trimesh.Trimesh | None:
     if mesh is None or len(mesh.faces) == 0:
         return mesh
     try:
-        mesh = mesh.process()
+        return mesh.process()
     except Exception:
-        mesh = trimesh.Trimesh(vertices=mesh.vertices, faces=mesh.faces, process=False)
-
-    try:
-        mesh.remove_degenerate_faces()
-    except Exception:
-        pass
-    try:
-        mesh.remove_unreferenced_vertices()
-    except Exception:
-        pass
-    try:
-        mesh = trimesh.smoothing.filter_humphrey(mesh, alpha=0.5, beta=0.5, iterations=1)
-    except Exception:
-        pass
-    if len(mesh.faces) == 0:
         return mesh
-    try:
-        mesh = mesh.process()
-    except Exception:
-        mesh = trimesh.Trimesh(vertices=mesh.vertices, faces=mesh.faces, process=False)
-    try:
-        mesh.remove_degenerate_faces()
-    except Exception:
-        pass
-    try:
-        mesh.remove_unreferenced_vertices()
-    except Exception:
-        pass
-    try:
-        mesh.fix_normals()
-    except Exception:
-        pass
-    return mesh
 
 
 def assembled_3mf(scene: trimesh.Scene, output_path: Path, name: str):
