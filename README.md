@@ -55,20 +55,20 @@ Use `--format stl` to write an STL instead of OBJ.
 4. Generate a quick classification preview from PowerShell:
 
 ```powershell
-.\scripts\run_windows.ps1 -ProjectConfig config/projects/craigieburn.yml -PreviewOnly
+.\scripts\run_windows.ps1 -ProjectConfig config/projects/example.yml -PreviewOnly
 ```
 
 On Linux/macOS, use:
 
 ```bash
-./scripts/run_linux_macos.sh config/projects/craigieburn.yml --preview-only
+./scripts/run_linux_macos.sh config/projects/example.yml --preview-only
 ```
 
 5. Adjust YAML values until the preview looks right.
 6. Generate the final 3MF and STL parts:
 
 ```powershell
-.\scripts\run_windows.ps1 -ProjectConfig config/projects/craigieburn.yml
+.\scripts\run_windows.ps1 -ProjectConfig config/projects/example.yml
 ```
 
 If you omit the project path, the scripts prompt for it and fall back to `config/projects/example.yml`.
@@ -155,30 +155,20 @@ features:
   lifts: {height_mm: 0.20}
 ```
 
-Lift classification uses case-insensitive regular expressions against `roads.name`:
-
-```yaml
-features:
-  lift_name_patterns:
-    - '^access( tow)?$'
-    - '^middle$'
-    - '^jarman$'
-```
-
 ## Command-line overrides
 
 Use YAML for repeatable settings. Command-line overrides are useful for experiments and do not edit any file.
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml --preview-only --rock-threshold 0.62
-ski-terrain config/projects/craigieburn.yml --vertical-scale 1.3
-ski-terrain config/projects/craigieburn.yml --line-width 0.45
+ski-terrain config/projects/example.yml --preview-only --rock-threshold 0.62
+ski-terrain config/projects/example.yml --vertical-scale 1.3
+ski-terrain config/projects/example.yml --line-width 0.45
 ```
 
 Any setting can be overridden using dotted `key=value` syntax:
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml --preview-only `
+ski-terrain config/projects/example.yml --preview-only `
   --set rock.minimum_patch_area_mm2=1.0 `
   --set features.roads.extrusions=2.5 `
   --set output.diagnostic_previews=true
@@ -189,7 +179,7 @@ ski-terrain config/projects/craigieburn.yml --preview-only `
 Choose another supplied profile:
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml --profile config/profiles/realistic.yml --preview-only
+ski-terrain config/projects/example.yml --profile config/profiles/realistic.yml --preview-only
 ```
 
 Profiles are ordinary YAML overlays. Add your own without changing Python code.
@@ -197,7 +187,7 @@ Profiles are ordinary YAML overlays. Add your own without changing Python code.
 ## Validation
 
 ```powershell
-ski-terrain config/projects/craigieburn.yml --validate-only
+ski-terrain config/projects/example.yml --validate-only
 ```
 
 This checks paths, CRS, layer/field names, resolved widths, dimensions, feature counts, and rock coverage without building meshes.
