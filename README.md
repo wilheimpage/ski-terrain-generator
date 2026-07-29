@@ -4,6 +4,10 @@ A reusable Python project that converts a cropped LiDAR DEM (`.tif`) plus manual
 
 The optional QGIS project (`.qgz`) is inspected for reporting only. Geometry comes from the saved TIFF and GeoPackage, so unsaved QGIS edits are not included.
 
+**N.B: This project was designed around New Zealad 1m LiDAR DEM data, using the NZTM2000 coordinate reference system (CRS). I have not tested this using any other CRS, but theoretically you should be able to use a GeoTIFF in any CRS, as long as your gpkg layers are using the same CRS, without any modification to the scripts.**
+
+**If you try this and it works, let me know!**
+
 ## Repository layout
 
 ```text
